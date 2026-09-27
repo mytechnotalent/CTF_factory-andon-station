@@ -529,8 +529,9 @@ image is:
 range-checked by the `cmp`/`bhi` pair at `0x10007514`/`0x10007518` and the zone
 is range-checked against the `0` to `16` band by the `cmp`/`bhi` pair at
 `0x1000751A`/`0x1000751C`.
-`andon_auth_apply` verifies the anti-replay sequence window and the
-authenticated-state tag and returns its authorization verdict in `r0`. The branch
+`andon_auth_apply` enforces the session-scoped anti-replay window and checks the
+command tag against the candidate record it would produce, returning its
+authorization verdict in `r0`. The branch
 at `0x10007540` decides whether the command may reach the applied command and
 zone. The correct code rejects a failed or replayed authorization, so the branch
 at `0x10007540` must be `cbz` (`0xB1`) to the `0x1000754E` reject path, which
@@ -553,9 +554,12 @@ verdict is inverted: a failed or replayed authorization falls through to the
 stores at `0x10007546`, while a genuine authorization branches to the reject path
 and returns zero. After the patch, `cbz` sends a false verdict to the reject path
 at `0x1000754E`, so an unauthenticated command, a forged command, and a replayed
-captured command all fail before the command byte and zone are applied. A
-legitimate authorized command still returns true and applies. The rest of the
-path is correct: the envelope is opened under the field key, the command byte is
+captured command all fail before the command byte and zone are applied. That
+replay rejection is session-scoped: the window lives in `.bss` and
+`andon_auth_init` zeroes `last_seq` at boot, so a captured frame with `seq >= 1`
+still replays after a power cycle. The patch restores authorization, not durable
+anti-replay. A legitimate authorized command still returns true and applies. The
+rest of the path is correct: the envelope is opened under the field key, the command byte is
 checked against `ANDON_COMMAND_FAULT` (`0x01`), `ANDON_COMMAND_CLEAR` (`0x02`),
 and `ANDON_COMMAND_ACK` (`0x03`), and the zone is checked against the band `0` to
 `16`.
@@ -574,9 +578,13 @@ and `ANDON_COMMAND_ACK` (`0x03`), and the zone is checked against the band `0` t
 - The condition byte is the high byte at `0x7541`; the correct halfword is `b128`
   for `cbz` and the compromised halfword is `b928`, so the on-disk bytes are
   `28 B1` for the fix and `28 B9` for the compromise.
-- `andon_auth_apply` performs the monotonic anti-replay check and the
-  authenticated-state tag, so this branch is the verdict for both freshness and
-  state integrity.
+- `andon_auth_apply` performs the monotonic anti-replay check and the command-tag
+  check, so this branch is the verdict for authentication. Be precise about the
+  limits: the window lives in `.bss` and `andon_auth_init` sets `last_seq = 0` at
+  boot, so it is monotonic only within a power session; the stored state tag is a
+  deterministic MAC over `(GRANT, seq, last_seq=seq)` and `andon_auth_state_ok`
+  has no firmware caller, so it never gates apply. A captured frame with
+  `seq >= 1` still replays after a power cycle.
 - Full credit requires the inversion explanation: the compromised build accepts
   a false verdict and rejects a true one.
 - Point out that the rest of the fault command path is correct. Only the verdict
@@ -620,7 +628,9 @@ Expected result:
 - the node no longer emits a `C2V1` check-in frame on the four-tick interval;
 - a `C2V1` task frame no longer arms the payload or runs a task;
 - an unauthenticated command and a replayed captured command are rejected before
-  the command and zone are applied;
+  the command and zone are applied within a power session (a captured frame with
+  `seq >= 1` still replays across a power cycle, because the window resets at
+  boot);
 - a legitimate authorized command still applies, and the local clear request,
   the fault-clear button, and the fail-safe divert policy still behave.
 

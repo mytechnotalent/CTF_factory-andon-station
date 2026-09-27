@@ -29,9 +29,18 @@ and verifies sealed fault and clear commands from a factory control gateway over
 RYLR998 LoRa control link.
 
 A contractor called **FROSTLINE** did not break into this node. It built a bot into
-the compiled firmware and signed the image. The cryptography is perfect: every
-fault command is sealed with XChaCha20-Poly1305 under an Argon2id field key, the
-anti-replay sequence window is stateful, and the authenticated state tag is real.
+the compiled firmware and signed the image. The primitives are standard and
+correctly implemented: every fault command is sealed with XChaCha20-Poly1305
+under an Argon2id field key, and the anti-replay window and authenticated state
+tag are real. The boundary is the key material: the field passphrase and salt are
+compiled into the image in cleartext, so anyone holding the `.bin` can re-derive
+the field key, and the crypto is lab-only, not a secrecy guarantee. Two honest
+caveats:
+the window lives in `.bss` and `andon_auth_init` zeroes `last_seq` at boot, so it
+only enforces monotonic sequence numbers within one power session; and the stored
+tag is a deterministic MAC over `(GRANT, seq, last_seq=seq)` that never gates the
+applied command. A captured frame with `seq >= 1` is still fresh after a power
+cycle.
 The implant does not break the cipher and never touches it. It reads the raw control
 payload before authentication, registers with a local command-and-control listener
 using the `C2V1` magic and bot id `0xB7`, checks in on a fixed cadence, executes a
@@ -183,9 +192,9 @@ was not built to answer to:
 |  2. Derive the field key with Argon2id                          |
 |  3. Read the DHT11 line temperature and classify the band       |
 |  4. Open the sealed fault envelope under the field key          |
-|  5. Reject a command whose seq is not strictly greater than last|
+|  5. Reject a seq not above last within one power session        |
 |  6. Accept a command only when the Poly1305 tag difference is 0 |
-|  7. Recompute the authenticated-state tag over the record       |
+|  7. Compute the state tag (apply does not check it)             |
 |  8. Move the diverter only when the authorization verdict is true|
 |  9. Treat a local clear as a request, never an authorization    |
 | 10. Never register with a listener or run a remote task         |
@@ -260,9 +269,10 @@ Annotated disassembly for the key functions is provided in
 2. Derives the 32-byte field key with Argon2id from a committed passphrase and
    salt.
 3. Reads the DHT11 line temperature and classifies it against the line band.
-4. Drains inbound `+RCV` lines, opens the sealed fault envelope, verifies the
-   anti-replay window and the state tag, checks the command set and the zone band,
-   and applies the command.
+4. Drains inbound `+RCV` lines, opens the sealed fault envelope, enforces the
+   session-scoped anti-replay window, checks the command set and the zone band,
+   and applies the command; the stored state tag is computed but never checked at
+   apply.
 5. Services the infrared local fault-clear remote and the operator clear button as
    requests that never bypass authorization.
 6. On a lost link or a fault, drives the diverter to its fail-safe divert posture.
@@ -333,11 +343,16 @@ All four defects are same-size in-place byte patches, so no address moves.
 
 The crypto core is a correct reference construction, reused from the earlier
 acts. Argon2id (`t=3`, `p=1`, `m=64`) derives the field key,
-XChaCha20-Poly1305 seals every frame, the monotonic sequence window rejects a
-replay, and the authenticated-state tag detects a tampered verdict. Only the four
-seams were broken. Once those bytes are restored, the sealed envelope is
-trustworthy. Describe the construction honestly in your report, and explain why
-the bot never needed it.
+XChaCha20-Poly1305 seals every frame, the sequence window rejects a replay within
+a power session, and the authenticated-state tag is a real MAC. Be precise about
+the limits: the window is zeroed at boot and the stored tag is never checked at
+apply, so a captured frame with `seq >= 1` replays across a power cycle. Only the
+four seams were broken. Once those bytes are restored, the sealed envelope verifies as
+intended against anyone who sees only the wire. That is not a secrecy guarantee:
+the field passphrase and salt are embedded in the image, the field key is
+recoverable by anyone holding the `.bin`, and Argon2id at `m=64` KiB is below
+current memory-hardness guidance. Describe the construction honestly in your
+report, and explain why the bot never needed it.
 
 ### The Anti-Debug Trap
 
@@ -444,8 +459,11 @@ Always call the stored entry the **reset handler**, never the reset pointer.
 3. Patch the byte so an unauthenticated or replayed fault or clear envelope is
    rejected before the command and zone are applied.
 4. Confirm that an unauthenticated command and a replayed captured command both
-   fail to change the command or zone on the corrected image, while a legitimate
-   authorized command still applies.
+   fail to change the command or zone within a power session on the corrected
+   image, while a legitimate authorized command still applies. Be precise: because
+   the window is zeroed at boot, the same captured frame with `seq >= 1` still
+   replays after a power cycle; the fix restores authorization, not durable
+   anti-replay.
 
 **Questions to answer:**
 - What does `andon_auth_apply` return, and what does the verdict mean?
@@ -465,8 +483,10 @@ Always call the stored entry the **reset handler**, never the reset pointer.
    ```
 4. Flash `ACT-VII_fixed.uf2` to the Pico 2 and prove on hardware: the station no
    longer registers, the task handler no longer runs a task, the reserved sector
-   stays blank, and an unauthenticated or replayed command is rejected while a
-   legitimate authorized command still applies.
+   stays blank, and an unauthenticated or replayed command is rejected within a
+   power session while a legitimate authorized command still applies. State
+   honestly that a captured frame with `seq >= 1` still replays across a power
+   cycle, because the window is zeroed at boot.
 5. Write a short reflection mapping each of the four defects to a real-world
    control-system failure.
 
