@@ -134,7 +134,7 @@ between the two `.bin` images. Both `.bin` images are 51,196 bytes and both
 
 | Criterion | Points | Full credit | Partial credit | No credit |
 |-----------|--------|-------------|----------------|-----------|
-| **[DOCUMENT]** Located the C2 check-in branch at 0x1000A47F | 5 | Address and function (`implant_tick`, inlined `implant_check_in`) identified | Approximate | Not found |
+| **[DOCUMENT]** Located the C2 check-in branch | 5 | Address and function (`implant_tick`, inlined `implant_check_in`) identified | Approximate | Not found |
 | **[DOCUMENT]** Documented the C2V1 check-in frame and the bot id 0xB7 | 5 | 4-byte `C2V1` magic, bot id `0xB7`, six-byte frame, four-tick interval | Partial | Wrong |
 | **[DOCUMENT & PATCH]** Patched 0xB9 to 0xB1 so the node does not register | 7 | Byte `0xB9` changed to `0xB1` | Wrong byte | Not patched |
 | **[DOCUMENT]** Explained why the raw check-in needs no cipher and hides beneath the sealed path | 3 | Raw path under the sealed envelope and a listener that holds no key | Vague | Missing |
@@ -143,7 +143,7 @@ between the two `.bin` images. Both `.bin` images are 51,196 bytes and both
 
 | Criterion | Points | Full credit | Partial credit | No credit |
 |-----------|--------|-------------|----------------|-----------|
-| **[DOCUMENT]** Located the task handler branch at 0x1000A2A9 | 5 | Address and function (`implant_handle_command`, inlined `implant_tasking_frame`) identified | Approximate | Not found |
+| **[DOCUMENT]** Located the task handler branch | 5 | Address and function (`implant_handle_command`, inlined `implant_tasking_frame`) identified | Approximate | Not found |
 | **[DOCUMENT]** Documented the TASK_BLINK, TASK_LOG, TASK_REPORT handler | 5 | Magic match before the sealed path, three benign tasks, unknown task ignored | Partial | Wrong |
 | **[DOCUMENT & PATCH]** Patched 0xB9 to 0xB1 so no remote task executes | 7 | Byte `0xB9` changed to `0xB1` | Wrong byte | Not patched |
 | **[DOCUMENT]** Explained why stopping the task handler is separate from stopping the check-in | 3 | The handler obeys, the check-in announces | Vague | Missing |
@@ -152,7 +152,7 @@ between the two `.bin` images. Both `.bin` images are 51,196 bytes and both
 
 | Criterion | Points | Full credit | Partial credit | No credit |
 |-----------|--------|-------------|----------------|-----------|
-| **[DOCUMENT]** Located the bot marker branch at 0x1000A3EF | 5 | Address and inlined `implant_init` path identified | Approximate | Not found |
+| **[DOCUMENT]** Located the bot marker branch | 5 | Address and inlined `implant_init` path identified | Approximate | Not found |
 | **[DOCUMENT]** Documented the CoreDebug DHCSR anti-debug and how it is defeated under GDB | 5 | `0xE000EDF0`, `C_DEBUGEN` and `C_HALT`, and a real defeat method | Partial | Wrong |
 | **[DOCUMENT & PATCH]** Patched 0xB9 to 0xB1 so no marker is written to 0x103FF000 | 7 | Byte `0xB9` changed to `0xB1` | Wrong byte | Not patched |
 | **[DOCUMENT]** Explained the reserved sector 0x103FF000 and the bot marker byte 0xC7 | 3 | Marker, reserved sector, write-once first run | Vague | Missing |
@@ -161,7 +161,7 @@ between the two `.bin` images. Both `.bin` images are 51,196 bytes and both
 
 | Criterion | Points | Full credit | Partial credit | No credit |
 |-----------|--------|-------------|----------------|-----------|
-| **[DOCUMENT]** Located the fault-clear authorization branch at 0x10007541 | 5 | Address and function (`control_handle_frame`) identified | Approximate | Not found |
+| **[DOCUMENT]** Located the fault-clear authorization branch | 5 | Address and function (`control_handle_frame`) identified | Approximate | Not found |
 | **[DOCUMENT]** Documented the authorization verdict inversion and the branch condition | 5 | Reject when the verdict is false | Partial | Wrong |
 | **[DOCUMENT & PATCH]** Patched 0xB9 to 0xB1 so failed and replayed authorizations are rejected | 7 | Byte `0xB9` changed to `0xB1` | Wrong byte | Not patched |
 | **[DOCUMENT]** Explained why an unauthenticated or replayed fault or clear envelope must be rejected | 3 | The applied command must see only an authorized verdict | Vague | Missing |
@@ -183,10 +183,10 @@ between the two `.bin` images. Both `.bin` images are 51,196 bytes and both
 |---------|-------------|-----------|
 | Reading the check-in gate backwards | The node still registers with the C2 listener | Suppress only on the clear-gate branch (`cbz`, `0xB1`) |
 | Reading the task gate backwards | The node still executes a remote task | Neutralize only when the gate is clear (`cbz`, `0xB1`) |
-| Confusing `cbz` and `cbnz` at `0xA3EF` or `0x7541` | The marker is still written, or a failed authorization is still accepted | Neutralize only when the gate or verdict is clear (`cbz`, `0xB1`) |
-| Patching the low byte at `0xA386`, `0xA1B0`, `0xA2F6`, or `0x7444` | The condition code never changes | Patch the high byte at `0xA47F`, `0xA2A9`, `0xA3EF`, `0x7541` |
-| Searching for a standalone `implant_infect`, `implant_check_in`, or `implant_tasking_frame` symbol | Cannot find the inlined gates | Look inside `implant_init` at `0xA3EF`, `implant_tick` at `0xA47F`, and `implant_handle_command` at `0xA2A9` |
-| Confusing the check-in with the task handler | Both gates sit in the implant, at `0xA47F` and `0xA2A9` | Patch the check-in gate in `implant_tick` first, then the task gate |
+| Confusing `cbz` and `cbnz` | The marker is still written, or a failed authorization is still accepted | Neutralize only when the gate or verdict is clear (`cbz`, `0xB1`) |
+| Patching the low byte of a gate | The condition code never changes | Patch the high byte of the branch |
+| Searching for a standalone `implant_infect`, `implant_check_in`, or `implant_tasking_frame` symbol | Cannot find the inlined gates | Look inside `implant_init`, `implant_tick`, and `implant_handle_command` |
+| Confusing the check-in with the task handler | Both gates sit in the implant | Patch the check-in gate in `implant_tick` first, then the task gate |
 | Patching the shipped image before observing the write | You never prove the bot marker write | Defeat `DHCSR` under GDB first, then patch the artifact |
 | Fabricating the GDB session | Verification fails | Show the command sequence and the real observed code path |
 | Treating the anti-debug as a defect to patch | Wasted effort; it is identical in both images | Defeat it in a scratch copy or with GDB, then patch the real defect |

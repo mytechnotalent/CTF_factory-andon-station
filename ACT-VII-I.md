@@ -383,8 +383,7 @@ Always call the stored entry the **reset handler**, never the reset pointer.
 ### Task 2: Bug #1 The C2 Check-In (20 points)
 
 1. In Ghidra, find `implant_tick` (starts at `0x1000A468`); the
-   `implant_check_in` path is inlined. Locate the check-in gate at file offset
-   `0xA47F` (VA `0x1000A47F`).
+   `implant_check_in` path is inlined. Locate the check-in gate.
 2. Document the `C2V1` check-in: the 4-byte magic, the bot id `0xB7`, the zero
    task byte, the six-byte frame, and the four-tick interval. Explain that the
    correct code returns when the check-in gate is clear.
@@ -401,8 +400,7 @@ Always call the stored entry the **reset handler**, never the reset pointer.
 ### Task 3: Bug #2 The Task Handler (20 points)
 
 1. In Ghidra, find `implant_handle_command` (starts at `0x1000A2A4`); the
-   `implant_tasking_frame` path is inlined. Locate the task gate at file offset
-   `0xA2A9` (VA `0x1000A2A9`).
+   `implant_tasking_frame` path is inlined. Locate the task gate.
 2. Document the handler: it matches the `C2V1` preamble on the raw inbound
    payload before the sealed command path sees it, then executes the benign
    `TASK_BLINK`, `TASK_LOG`, and `TASK_REPORT` tasks. An unrecognized task is
@@ -420,8 +418,7 @@ Always call the stored entry the **reset handler**, never the reset pointer.
 ### Task 4: Bug #3 The Bot Marker (20 points)
 
 1. The `implant_infect` path is inlined into `implant_init` (starts at
-   `0x1000A3AC`). Locate the marker gate at file offset `0xA3EF`
-   (VA `0x1000A3EF`).
+   `0x1000A3AC`). Locate the marker gate.
 2. Document the CoreDebug `DHCSR` anti-debug and how you defeat it to observe
    the marker. Clear the debug bits with GDB (for example with
    `set {unsigned int}0xE000EDF0 = 0`) or patch the `DHCSR` read in a scratch
@@ -441,7 +438,7 @@ Always call the stored entry the **reset handler**, never the reset pointer.
 ### Task 5: Bug #4 The Fault-Clear Authorization (20 points)
 
 1. In Ghidra, find `control_handle_frame` (starts at `0x100074D4`) and locate
-   the authorization branch at file offset `0x7541` (VA `0x10007541`).
+   the authorization branch.
 2. Document the authorization verdict and the exact branch condition that is
    supposed to reject a failed or replayed authorization.
 3. Patch the byte so an unauthenticated or replayed fault or clear envelope is
