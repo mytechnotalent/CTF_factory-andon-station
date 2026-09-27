@@ -227,27 +227,27 @@ Addresses are drawn from `ACT-VII-main-disasm.txt`:
 | Module | Anchor function | Address |
 |--------|-----------------|---------|
 | Entry | `main` | `0x10000234` |
-| Monitor / andon state machine | `monitor_init` | `0x10006434` |
-| Monitor / andon state machine | `monitor_step` | `0x100065CC` |
+| Monitor / andon state machine | `monitor_init` | `0x10006444` |
+| Monitor / andon state machine | `monitor_step` | `0x10006604` |
 | Control (sealed fault path) | `control_handle_frame` | `0x100074D4` |
-| Control (applied command) | `control_command` | `0x1000746C` |
-| Control (applied zone) | `control_zone` | `0x10007478` |
-| Diverter (actuator) | `diverter_init` | `0x10007484` |
-| Diverter (actuator) | `diverter_apply_command` | `0x1000749C` |
-| Diverter (actuator) | `diverter_tick` | `0x100074D0` |
-| Diverter (actuator) | `diverter_fail_safe` | `0x10007510` |
-| Diverter (actuator) | `diverter_retract` | `0x1000A7FC` |
-| Diverter (actuator) | `diverter_deploy` | `0x1000A818` |
-| Andon authorization | `andon_auth_init` | `0x1000752C` |
-| Andon authorization | `andon_auth_set_key` | `0x10007540` |
-| Andon authorization | `andon_auth_apply` | `0x10007588` |
+| Control (applied command) | `control_command` | `0x10007568` |
+| Control (applied zone) | `control_zone` | `0x10007574` |
+| Diverter (actuator) | `diverter_init` | `0x10007580` |
+| Diverter (actuator) | `diverter_apply_command` | `0x10007598` |
+| Diverter (actuator) | `diverter_tick` | `0x100075CC` |
+| Diverter (actuator) | `diverter_fail_safe` | `0x1000760C` |
+| Diverter (actuator) | `diverter_retract` | `0x1000A8F4` |
+| Diverter (actuator) | `diverter_deploy` | `0x1000A910` |
+| Andon authorization | `andon_auth_init` | `0x10007628` |
+| Andon authorization | `andon_auth_set_key` | `0x1000763C` |
+| Andon authorization | `andon_auth_apply` | `0x10007684` |
 | Implant | `implant_tick` | `0x1000A468` |
 | Implant | `implant_handle_command` | `0x1000A2A4` |
 | Implant | `implant_init` | `0x1000A3AC` |
-| Implant | `implant_infected` | `0x1000A198` |
-| Radio | `radio_send_frame` | `0x1000A480` |
-| Crypto | `envelope_open_hex` | `0x10007830` |
-| Tower light | `status_led_show` | `0x1000A77C` |
+| Implant | `implant_infected` | `0x1000A290` |
+| Radio | `radio_send_frame` | `0x1000A578` |
+| Crypto | `envelope_open_hex` | `0x10007928` |
+| Tower light | `status_led_show` | `0x1000A874` |
 
 Annotated disassembly for the key functions is provided in
 `ACT-VII-main-disasm.txt`. Use it as a map, then confirm every byte yourself.
@@ -343,10 +343,10 @@ the bot never needed it.
 
 This is an analysis obstacle, not a graded defect on its own. The implant reads
 CoreDebug `DHCSR` at `0xE000EDF0` and returns early while a probe is attached. In
-`implant_tick` the read is the `ldr.w r3, [r3, #3568]` at `0x1000A392`, the
-`lsls r3, r3, #30` at `0x1000A396` keeps `C_HALT` and `C_DEBUGEN`, and the
-`bne.n` at `0x1000A398` suppresses the check-in. The same register is read again
-at `0x1000A1BC` inside `implant_handle_command`. It is identical in both the
+`implant_tick` the read is the `ldr.w r3, [r3, #3568]` at `0x1000A48A`, the
+`lsls r3, r3, #30` at `0x1000A48E` keeps `C_HALT` and `C_DEBUGEN`, and the
+`bne.n` at `0x1000A490` suppresses the check-in. The same register is read again
+at `0x1000A2B4` inside `implant_handle_command`. It is identical in both the
 compromised and corrected images. You must defeat it to observe the marker write
 before you patch the shipped artifact.
 
@@ -514,18 +514,18 @@ Flash in BOOTSEL mode (hold BOOT, plug in USB) and copy the UF2 onto the
 | Implant tick counter | `0x20013714` | Incremented once per `implant_tick` |
 | Implant task count | `0x20013710` | Number of executed remote tasks |
 | Implant check-in count | `0x2001370C` | Number of emitted check-in frames |
-| Implant armed flag | `0x20013CF5` | Set when the payload handler arms |
-| Implant checked-in flag | `0x20013CF6` | Set after a check-in frame is emitted |
-| Implant check-in enable | `0x20013CF7` | Enables the check-in readiness test |
-| Implant check-in gate | `0x20013CF8` | Gates the `C2V1` registration |
-| Implant last task | `0x20013CF9` | Last executed task code |
-| Implant marker gate | `0x20013CFA` | Gates the reserved-sector marker write |
-| Implant task gate | `0x20013CFB` | Gates the remote task handler |
-| Implant tasking enable | `0x20013CFC` | Enables the tasking readiness test |
-| Control ready gate | `0x20013CF1` | Gates the sealed fault command path |
-| Applied command | `0x20013CF0` | Command after a true verdict |
+| Implant armed flag | `0x20013CF7` | Set when the payload handler arms |
+| Implant checked-in flag | `0x20013CF8` | Set after a check-in frame is emitted |
+| Implant check-in enable | `0x20013CF9` | Enables the check-in readiness test |
+| Implant check-in gate | `0x20013CFA` | Gates the `C2V1` registration |
+| Implant last task | `0x20013CFB` | Last executed task code |
+| Implant marker gate | `0x20013CFC` | Gates the reserved-sector marker write |
+| Implant task gate | `0x20013CFD` | Gates the remote task handler |
+| Implant tasking enable | `0x20013CFE` | Enables the tasking readiness test |
+| Control ready gate | `0x20013CF3` | Gates the sealed fault command path |
+| Applied command | `0x20013CF2` | Command after a true verdict |
 | Applied zone | `0x20013CE2` | Zone after a true verdict |
-| Authorization ready gate | `0x20013CEC` | Gates the authorization check |
+| Authorization ready gate | `0x20013CEE` | Gates the authorization check |
 | Auth state record | `0x200136CC` | Anti-replay and state-tag record |
 | Control field key | `0x200131F4` | Derived field key for the envelope |
 | Envelope workspace | `0x200136E8` | Sealed frame open workspace |

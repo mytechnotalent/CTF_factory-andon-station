@@ -127,7 +127,7 @@ between the two `.bin` images. Both `.bin` images are 51,196 bytes and both
 | **[DOCUMENT]** Processor configured as ARM Cortex 32 little endian default | 2 | Screenshot shows the correct processor | Wrong language | Missing |
 | **[DOCUMENT]** Base address set to 0x10000000 | 2 | Base `0x10000000` | Wrong base | Missing |
 | **[DOCUMENT]** Vector table, initial stack pointer, and reset handler identified | 2 | Base `0x10000000`, initial SP `0x20082000`, reset handler `0x1000015D` | One missing | Not found |
-| **[DOCUMENT]** main and the andon monitor state machine (monitor_step) addresses identified | 1 | `main` `0x10000234`, `monitor_step` `0x100065CC` | One correct | Neither |
+| **[DOCUMENT]** main and the andon monitor state machine (monitor_step) addresses identified | 1 | `main` `0x10000234`, `monitor_step` `0x10006604` | One correct | Neither |
 | **[DOCUMENT]** Module map identifies the diverter, control, andon_auth, implant, and monitor anchors | 1 | At least one correct anchor per module | Partial | Missing |
 
 ### Task 2: Bug #1 The C2 Check-In (20 points)
@@ -232,18 +232,18 @@ the SG90 current spike.
 | Implant tick counter | `0x20013714` | Incremented once per `implant_tick` |
 | Implant task count | `0x20013710` | Number of executed remote tasks |
 | Implant check-in count | `0x2001370C` | Number of emitted check-in frames |
-| Implant armed flag | `0x20013CF5` | Set when the payload handler arms |
-| Implant checked-in flag | `0x20013CF6` | Set after a check-in frame is emitted |
-| Implant check-in enable | `0x20013CF7` | Enables the check-in readiness test |
-| Implant check-in gate | `0x20013CF8` | Gates the `C2V1` registration |
-| Implant last task | `0x20013CF9` | Last executed task code |
-| Implant marker gate | `0x20013CFA` | Gates the reserved-sector marker write |
-| Implant task gate | `0x20013CFB` | Gates the remote task handler |
-| Implant tasking enable | `0x20013CFC` | Enables the tasking readiness test |
-| Control ready gate | `0x20013CF1` | Gates the sealed fault command path |
-| Applied command | `0x20013CF0` | Command after a true verdict |
+| Implant armed flag | `0x20013CF7` | Set when the payload handler arms |
+| Implant checked-in flag | `0x20013CF8` | Set after a check-in frame is emitted |
+| Implant check-in enable | `0x20013CF9` | Enables the check-in readiness test |
+| Implant check-in gate | `0x20013CFA` | Gates the `C2V1` registration |
+| Implant last task | `0x20013CFB` | Last executed task code |
+| Implant marker gate | `0x20013CFC` | Gates the reserved-sector marker write |
+| Implant task gate | `0x20013CFD` | Gates the remote task handler |
+| Implant tasking enable | `0x20013CFE` | Enables the tasking readiness test |
+| Control ready gate | `0x20013CF3` | Gates the sealed fault command path |
+| Applied command | `0x20013CF2` | Command after a true verdict |
 | Applied zone | `0x20013CE2` | Zone after a true verdict |
-| Authorization ready gate | `0x20013CEC` | Gates the authorization check |
+| Authorization ready gate | `0x20013CEE` | Gates the authorization check |
 | Auth state record | `0x200136CC` | Anti-replay and state-tag record |
 | Control field key | `0x200131F4` | Derived field key for the envelope |
 | Envelope workspace | `0x200136E8` | Sealed frame open workspace |
